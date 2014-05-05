@@ -27,6 +27,13 @@ function DeadCrawl(url) {
 }
 
 
+/*
+ * parse url to extract destination info
+ *
+ * @return {Object}
+ * @api private
+ */
+
 DeadCrawl.prototype.__defineGetter__('dest', function() {
   var uri = url.parse(this.url);
   var pathname = uri.pathname;
