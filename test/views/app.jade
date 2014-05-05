@@ -1,0 +1,19 @@
+doctype html
+html(ng-app='App')
+  head(seo-head)
+    title {{title}}
+    meta(name="description" content="{{description}}")
+    script(src="/javascripts/angular.min.js")
+    script(src="/javascripts/angular-resource.min.js")
+    script(src="/javascripts/angular-route.min.js")
+    script(src="/javascripts/app.js")
+
+  body
+    ul(products-list)
+      li(ng-repeat='product in products')
+        span.product
+          | {{product.name}}
+    div(seo-head style='display: none')
+      // neeaed to render angular bindings in <head> when using zombie
+    script.
+
