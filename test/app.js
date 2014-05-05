@@ -20,10 +20,6 @@ app.set('view engine', 'jade');
 
 app.use(express.static(__dirname+'/public'));
 
-app.get('/', function(req, res, next) {
-  res.render("./app");
-});
-
 // app.listen(1337, function() {
 //   console.log('server on 1337');
 // });

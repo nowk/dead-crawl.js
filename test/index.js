@@ -7,6 +7,24 @@ var fs = require('fs');
 var Q = require('q');
 var app = t.app;
 
+/*
+ * root
+ */
+
+app.get('/', function(req, res, next) {
+  res.render("./app");
+});
+
+
+/*
+ * pathed route
+ */
+
+app.get("/path/to/page(.:format)", function(req, res, next) {
+  res.render('./app');
+});
+
+
 var DeadCrawl = require('..');
 
 

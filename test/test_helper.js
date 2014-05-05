@@ -13,15 +13,6 @@ exports.app = app;
 
 
 /*
- * pathed route
- */
-
-app.get("/path/to/page(.:format)", function(req, res, next) {
-  res.render('./app');
-});
-
-
-/*
  * delete written out through tests
  *
  * @param {String} path
