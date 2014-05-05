@@ -26,6 +26,17 @@ describe('DeadCrawl', function() {
   //   browser = new Browser({debug: true, silent: false});
   // });
 
+  afterEach(function(done) {
+    Q
+      .allSettled([
+        unlink('./index.html'),
+        unlink('./path/to/page.html'),
+      ])
+      .then(function() {
+        done();
+      });
+  });
+
   it('visits the url and saves the html to file', function(done) {
     new DeadCrawl(url)
       .zombify()
