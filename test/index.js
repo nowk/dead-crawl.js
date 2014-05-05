@@ -1,37 +1,29 @@
 /* jshint node: true */
 
+var t = require('./test_helper');
 var assert = require('chai').assert;
 var Browser = require('zombie');
 var fs = require('fs');
 var Q = require('q');
+var app = t.app;
 
-var app = require('./app');
 var DeadCrawl = require('..');
-
-app.get("/path/to/page(.:format)", function(req, res, next) {
-  res.render('./app');
-});
 
 
 describe('DeadCrawl', function() {
   this._timeout = 9999;
-  var browser;
   var url = 'http://localhost:1337';
 
   before(function(done) {
     app.listen(1337, done);
   });
 
-  // beforeEach(function() {
-  //   browser = new Browser({debug: true, silent: false});
-  // });
-
   afterEach(function(done) {
     Q
       .allSettled([
-        unlink('./index.html'),
-        unlink('./path/to/page.html'),
-        unlink('./test/public/index.html')
+        t.unlink('./index.html'),
+        t.unlink('./path/to/page.html'),
+        t.unlink('./test/public/index.html')
       ])
       .then(function() {
         done();
@@ -100,25 +92,5 @@ describe('DeadCrawl', function() {
         });
       });
   });
-
-
-  describe('middleware', function() {
-    it('executes DeadCrawl with url contains ?_escaped_fragment');
-  });
 });
 
-
-/*
- * delete written out through tests
- *
- * @param {String} path
- * @return {Promise}
- */
-
-function unlink(path) {
-  var d = Q.defer();
-  fs.unlink(path, function(err) {
-    d.resolve();
-  });
-  return d.promise;
-}
