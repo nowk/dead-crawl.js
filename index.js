@@ -21,8 +21,9 @@ module.exports = DeadCrawl;
  * @constructor
  */
 
-function DeadCrawl(url) {
+function DeadCrawl(url, destroot) {
   this.url = url;
+  this.destroot = destroot || '.';
   this.browser = null;
 }
 
@@ -39,13 +40,16 @@ DeadCrawl.prototype.__defineGetter__('dest', function() {
   var pathname = uri.pathname;
 
   if ('/' === pathname) {
-    pathname = '/index';
+    pathname = 'index';
   }
 
-  // TODO do we need to convert other ext to .html?
-  if (!!!path.extname(pathname)) {
-    pathname+='.html';
-  }
+  // - remove multi /
+  // - remove ext
+  // - add .html
+  pathname = [this.destroot, pathname]
+    .join("/")
+    .replace(/\/{2,}/, '/')
+    .replace(/\.\w+$/, '')+'.html';
 
   return {
     file: path.basename(pathname),
@@ -82,16 +86,14 @@ DeadCrawl.prototype.zombify = function() {
 function write() {
   var self = this;
   var d = Q.defer();
-  var dir = path.resolve('.'+self.dest.dir);
-  var out = path.join(dir, self.dest.file);
 
-  mkdirp(dir, function(err) {
+  mkdirp(self.dest.dir, function(err) {
     if (err) {
       return d.reject(err);
     }
 
     fs
-      .writeFile(out, self.browser.html(), {encoding: 'utf-8'}, function(err) {
+      .writeFile(self.dest.path, self.browser.html(), {encoding: 'utf-8'}, function(err) {
         tearDown.call(self);
 
         if (err) {

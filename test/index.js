@@ -31,6 +31,7 @@ describe('DeadCrawl', function() {
       .allSettled([
         unlink('./index.html'),
         unlink('./path/to/page.html'),
+        unlink('./test/public/index.html')
       ])
       .then(function() {
         done();
@@ -54,16 +55,16 @@ describe('DeadCrawl', function() {
     var dca = new DeadCrawl(url);
     assert.deepEqual(dca.dest, {
       file: 'index.html',
-      dir: '/',
-      path: '/index.html',
+      dir: '.',
+      path: './index.html',
     });
 
     var pathurl = url+'/path/to/page?foo=bar';
     var dcb = new DeadCrawl(pathurl);
     assert.deepEqual(dcb.dest, {
       file: 'page.html',
-      dir: '/path/to',
-      path: '/path/to/page.html',
+      dir: './path/to',
+      path: './path/to/page.html',
     });
 
     var pathurlwext = url+'/path/to/page.html';
@@ -79,9 +80,45 @@ describe('DeadCrawl', function() {
       });
   });
 
+  it("accepts a destination root path", function(done) {
+    var dc = new DeadCrawl(url, __dirname+'/public/');
+
+    assert.deepEqual(dc.dest, {
+      file: 'index.html',
+      dir: __dirname+'/public',
+      path: __dirname+'/public/index.html'
+    });
+
+    dc
+      .zombify()
+      .then(function() {
+        fs.lstat('./test/public/index.html', function(err, stats) {
+          if (err) {
+            return done(err);
+          }
+          done();
+        });
+      });
+  });
+
 
   describe('middleware', function() {
     it('executes DeadCrawl with url contains ?_escaped_fragment');
   });
 });
 
+
+/*
+ * delete written out through tests
+ *
+ * @param {String} path
+ * @return {Promise}
+ */
+
+function unlink(path) {
+  var d = Q.defer();
+  fs.unlink(path, function(err) {
+    d.resolve();
+  });
+  return d.promise;
+}
