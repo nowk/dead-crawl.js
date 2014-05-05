@@ -31,9 +31,10 @@ var DeadCrawl = require('..');
 describe('DeadCrawl', function() {
   this._timeout = 9999;
   var url = 'http://localhost:1337';
+  var server;
 
   before(function(done) {
-    app.listen(1337, done);
+    server = app.listen(1337, done);
   });
 
   afterEach(function(done) {
@@ -46,6 +47,10 @@ describe('DeadCrawl', function() {
       .then(function() {
         done();
       });
+  });
+
+  after(function(done) {
+    server.close(done);
   });
 
   it('visits the url and saves the html to file', function(done) {
