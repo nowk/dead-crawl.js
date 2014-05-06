@@ -46,8 +46,7 @@ DeadCrawl.prototype.__defineGetter__('dest', function() {
   var hash = uri.hash;
 
   if (!!hash) {
-    hash = hash.replace(this.hashbang, '');
-    pathname = Path.join(pathname, hash);
+    pathname = Path.join(pathname, hash.replace(this.hashbang, ''));
   }
 
   if ('/' === pathname) {

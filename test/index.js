@@ -118,8 +118,13 @@ describe('DeadCrawl', function() {
   });
 
   it("resolves hashbang", function() {
-    var hashbangurl = url+'/#!/path/to/js';
-    assert.deepEqual(new DeadCrawl(hashbangurl).dest, {
+    assert.deepEqual(new DeadCrawl(url+'/#!/').dest, {
+      file: 'index.html',
+      dir: '.',
+      path: './index.html'
+    });
+
+    assert.deepEqual(new DeadCrawl(url+'/#!/path/to/js').dest, {
       file: 'js.html',
       dir: './path/to',
       path: './path/to/js.html'
