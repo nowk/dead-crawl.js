@@ -74,7 +74,7 @@ function configureDest() {
 
   pathname = Path
     .join(this.destroot, pathname)
-    .replace(/\?.*$/, '')
+    .replace(/\?.*$/, '') // TODO what best is way to handle? not all urls are pretty
     .replace(/\.\w+$/, '')+'.html';
 
   return {
