@@ -1,8 +1,8 @@
 doctype html
 html(ng-app='App')
   head(seo-head)
-    title {{title}}
-    meta(name="description" content="{{description}}")
+    title {{title()}}
+    meta(name="description" content="{{description()}}")
     script(src="/javascripts/angular.min.js")
     script(src="/javascripts/angular-resource.min.js")
     script(src="/javascripts/angular-route.min.js")

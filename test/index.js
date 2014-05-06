@@ -141,12 +141,21 @@ describe('DeadCrawl', function() {
   it('can post process', function(done) {
     new DeadCrawl(url, {
       postProcess: function(browser) {
-        return browser.html().replace(/\sng-app="\w+"\s/, ' ');
+        var d = Q.defer();
+        (function wait() {
+          var c = browser.query('meta[name="description"]').attributes.content._nodeValue;
+          if (!!!c) {
+            return wait();
+          }
+          d.resolve(browser.html().replace(/\sng-app="\w+"/, ''));
+        })();
+        return d.promise;
       }
     })
       .zombify()
       .then(function(html) {
         assert(!/ng-app/.test(html));
+        assert(/Awesome Title/.test(html));
         fs.lstat('index.html', function(err, stats) {
           if (err) {
             return done(err);

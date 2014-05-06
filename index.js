@@ -29,9 +29,7 @@ function DeadCrawl(url, options) {
   this.url = url;
   this.destroot = options.destroot || '.';
   this.hashbang = options.hashbang || '#!';
-  this.postProcess = options.postProcess || function(browser) {
-    return browser.html();
-  };
+  this.postProcess = options.postProcess || postProcess;
   this.browser = null;
 
   this.dest = configureDest.call(this);
@@ -101,23 +99,25 @@ function write() {
   var self = this;
   var d = Q.defer();
 
-  var html = self.postProcess(self.browser);
-
-  mkdirp(self.dest.dir, function(err) {
-    if (err) {
-      return d.reject(err);
-    }
-
-    fs
-      .writeFile(self.dest.path, html, {encoding: 'utf-8'}, function(err) {
-        tearDown.call(self);
-
+  self.postProcess(self.browser)
+    .then(function(html) {
+      mkdirp(self.dest.dir, function(err) {
         if (err) {
           return d.reject(err);
         }
-        d.resolve(html);
+
+        fs
+          .writeFile(self.dest.path, html, {encoding: 'utf-8'}, function(err) {
+            tearDown.call(self);
+
+            if (err) {
+              return d.reject(err);
+            }
+            d.resolve(html);
+          });
       });
-  });
+    })
+    .fail(d.reject);
 
   return d.promise;
 }
@@ -135,6 +135,21 @@ function tearDown() {
   process.nextTick(function() {
     self.browser.close();
   });
+}
+
+
+/*
+ * default post process
+ *
+ * @param {Browser} browser
+ * @return {Promise}
+ * @api private
+ */
+
+function postProcess(browser) {
+  var d = Q.defer();
+  d.resolve(browser.html());
+  return d.promise;
 }
 
 

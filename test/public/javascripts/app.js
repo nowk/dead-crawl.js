@@ -28,20 +28,35 @@
     //     $scope.description = 'This is the awesomeness known as awesome';
     //   }, 1000);
     // })
-    .directive('seoHead', function($timeout) {
+    .factory('SeoService', function() {
+      var title = '';
+      var description = '';
+
       return {
-        restrict: 'A',
-        controller: function($scope, $element, $attrs) {
+        title: function(val) {
+          if ('undefined' !== typeof val) {
+            title = val;
+          }
+          return title;
         },
-        link: function(scope, element, attrs) {
-          $timeout(function() {
-            scope.title = 'Awesome Title!';
-            scope.description = 'This is the awesomeness known as awesome';
-          }, 1000);
+        description: function(val) {
+          if ('undefined' !== typeof val) {
+            description = val;
+          }
+          return description;
         }
       };
     })
-    .directive('productsList', function($timeout) {
+    .directive('seoHead', function($timeout, SeoService) {
+      return {
+        restrict: 'A',
+        controller: function($scope, $element, $attrs) {
+          $scope.title = SeoService.title;
+          $scope.description = SeoService.description;
+        }
+      };
+    })
+    .directive('productsList', function($timeout, SeoService) {
       return {
         restrict: 'A',
         controller: function($scope, $attrs, $element) {
@@ -54,7 +69,10 @@
               {name: 'Three'},
               {name: 'Four'}
             ];
-          }, 1000);
+
+            SeoService.title('Awesome Title!');
+            SeoService.description('This is the awesomeness known as awesome');
+          }, 500);
         }
       };
     });
