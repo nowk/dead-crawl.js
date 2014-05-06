@@ -30,17 +30,35 @@ function DeadCrawl(url, options) {
   this.destroot = options.destroot || '.';
   this.hashbang = options.hashbang || '#!';
   this.browser = null;
+
+  this.dest = configureDest.call(this);
 }
 
 
 /*
- * parse url to extract destination info
+ * visit via zombie
+ *
+ * @return {Promise}
+ * @api public
+ */
+
+DeadCrawl.prototype.zombify = function() {
+  this.browser = new Browser({debug: false, silent: true});
+
+  return this.browser
+    .visit(this.url)
+    .then(write.bind(this));
+};
+
+
+/*
+ * configure destination
  *
  * @return {Object}
  * @api private
  */
 
-DeadCrawl.prototype.__defineGetter__('dest', function() {
+function configureDest() {
   var uri = Url.parse(this.url);
   var pathname = uri.pathname;
   var hash = uri.hash;
@@ -66,24 +84,7 @@ DeadCrawl.prototype.__defineGetter__('dest', function() {
     dir: Path.dirname(pathname),
     path: pathname
   };
-});
-
-
-
-/*
- * visit via zombie
- *
- * @return {Promise}
- * @api public
- */
-
-DeadCrawl.prototype.zombify = function() {
-  this.browser = new Browser({debug: false, silent: true});
-
-  return this.browser
-    .visit(this.url)
-    .then(write.bind(this));
-};
+}
 
 
 /*
