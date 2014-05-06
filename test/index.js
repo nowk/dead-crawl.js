@@ -138,6 +138,20 @@ describe('DeadCrawl', function() {
     });
   });
 
+  it("strips out query string", function() {
+    assert.deepEqual(new DeadCrawl(url+'/#!/path/to/page?id=12345').dest, {
+      file: 'page.html',
+      dir: 'path/to',
+      path: 'path/to/page.html'
+    });
+
+    assert.deepEqual(new DeadCrawl(url+'/path/to/page?id=12345').dest, {
+      file: 'page.html',
+      dir: 'path/to',
+      path: 'path/to/page.html'
+    });
+  });
+
   it('can post process', function(done) {
     new DeadCrawl(url, {
       postProcess: function(browser) {

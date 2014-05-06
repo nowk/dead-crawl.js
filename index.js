@@ -74,6 +74,7 @@ function configureDest() {
 
   pathname = Path
     .join(this.destroot, pathname)
+    .replace(/\?.*$/, '')
     .replace(/\.\w+$/, '')+'.html';
 
   return {
