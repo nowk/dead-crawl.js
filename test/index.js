@@ -158,6 +158,7 @@ describe('DeadCrawl', function() {
         var d = Q.defer();
         (function wait() {
           var c = browser.query('meta[name="description"]').attributes.content._nodeValue;
+          // NOTE should timer/interval this so you can cancel out, else it will run forever
           if (!!!c) {
             return wait();
           }
