@@ -6,6 +6,7 @@ var Browser = require('zombie');
 var fs = require('fs');
 var Q = require('q');
 var app = t.app;
+var path = require('path');
 
 /*
  * root
@@ -96,7 +97,7 @@ describe('DeadCrawl', function() {
   });
 
   it("accepts a destination root path", function(done) {
-    var dc = new DeadCrawl(url, __dirname+'/public/');
+    var dc = new DeadCrawl(url, {destroot: __dirname+'/public/'});
 
     assert.deepEqual(dc.dest, {
       file: 'index.html',
@@ -114,6 +115,22 @@ describe('DeadCrawl', function() {
           done();
         });
       });
+  });
+
+  it("resolves hashbang", function() {
+    var hashbangurl = url+'/#!/path/to/js';
+    assert.deepEqual(new DeadCrawl(hashbangurl).dest, {
+      file: 'js.html',
+      dir: './path/to',
+      path: './path/to/js.html'
+    });
+
+    var pathandhashbangurl = url+"/posts/comments/#!/path/to/js";
+    assert.deepEqual(new DeadCrawl(pathandhashbangurl).dest, {
+      file: 'js.html',
+      dir: './posts/comments/path/to',
+      path: './posts/comments/path/to/js.html'
+    });
   });
 });
 

@@ -3,8 +3,8 @@
 var Browser = require('zombie');
 var fs = require('fs');
 var Q = require('q');
-var path = require('path');
-var url = require('url');
+var Path = require('path');
+var Url = require('url');
 var mkdirp = require('mkdirp');
 
 
@@ -21,9 +21,14 @@ module.exports = DeadCrawl;
  * @constructor
  */
 
-function DeadCrawl(url, destroot) {
+function DeadCrawl(url, options) {
+  if ('undefined' === typeof options) {
+    options = {};
+  }
+
   this.url = url;
-  this.destroot = destroot || '.';
+  this.destroot = options.destroot || '.';
+  this.hashbang = options.hashbang || '#!';
   this.browser = null;
 }
 
@@ -36,8 +41,14 @@ function DeadCrawl(url, destroot) {
  */
 
 DeadCrawl.prototype.__defineGetter__('dest', function() {
-  var uri = url.parse(this.url);
+  var uri = Url.parse(this.url);
   var pathname = uri.pathname;
+  var hash = uri.hash;
+
+  if (!!hash) {
+    hash = hash.replace(this.hashbang, '');
+    pathname = Path.join(pathname, hash);
+  }
 
   if ('/' === pathname) {
     pathname = 'index';
@@ -52,8 +63,8 @@ DeadCrawl.prototype.__defineGetter__('dest', function() {
     .replace(/\.\w+$/, '')+'.html';
 
   return {
-    file: path.basename(pathname),
-    dir: path.dirname(pathname),
+    file: Path.basename(pathname),
+    dir: Path.dirname(pathname),
     path: pathname
   };
 });
