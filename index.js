@@ -18,6 +18,8 @@ module.exports = DeadCrawl;
 /*
  * daed crawl
  *
+ * @param {String} url
+ * @param {Object} options
  * @constructor
  */
 
@@ -153,6 +155,7 @@ function postProcess(browser) {
  * middleware
  *
  * @param {String} url
+ * @param {Object} options
  * @return {Function}
  */
 
