@@ -1,7 +1,7 @@
 {
   "name": "dead-crawl",
   "version": "0.0.1",
-  "description": "SEO middleware for ?_escaped_fragment_=",
+  "description": "SEO+Javascript == Undead",
   "main": "index.js",
   "scripts": {
     "test": "mocha test"
