@@ -149,6 +149,15 @@ describe('DeadCrawl', function() {
           }
           d.resolve(browser.html().replace(/\sng-app="\w+"/, ''));
         })();
+
+        // TODO would really like to use wait...
+        // browser.wait(function(window) {
+        //   var sel = window.document.querySelector('title');
+        //   return sel;
+        // }, function() {
+        //   d.resolve(browser.html());
+        // });
+
         return d.promise;
       }
     })
