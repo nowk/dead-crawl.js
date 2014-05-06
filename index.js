@@ -72,12 +72,8 @@ function configureDest() {
     pathname = 'index';
   }
 
-  // - remove multi /
-  // - remove ext
-  // - add .html
-  pathname = [this.destroot, pathname]
-    .join("/")
-    .replace(/\/{2,}/, '/')
+  pathname = Path
+    .join(this.destroot, pathname)
     .replace(/\.\w+$/, '')+'.html';
 
   return {

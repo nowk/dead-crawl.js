@@ -72,15 +72,15 @@ describe('DeadCrawl', function() {
     assert.deepEqual(dca.dest, {
       file: 'index.html',
       dir: '.',
-      path: './index.html',
+      path: 'index.html',
     });
 
     var pathurl = url+'/path/to/page?foo=bar';
     var dcb = new DeadCrawl(pathurl);
     assert.deepEqual(dcb.dest, {
       file: 'page.html',
-      dir: './path/to',
-      path: './path/to/page.html',
+      dir: 'path/to',
+      path: 'path/to/page.html',
     });
 
     var pathurlwext = url+'/path/to/page.html';
@@ -121,20 +121,20 @@ describe('DeadCrawl', function() {
     assert.deepEqual(new DeadCrawl(url+'/#!/').dest, {
       file: 'index.html',
       dir: '.',
-      path: './index.html'
+      path: 'index.html'
     });
 
     assert.deepEqual(new DeadCrawl(url+'/#!/path/to/js').dest, {
       file: 'js.html',
-      dir: './path/to',
-      path: './path/to/js.html'
+      dir: 'path/to',
+      path: 'path/to/js.html'
     });
 
     var pathandhashbangurl = url+"/posts/comments/#!/path/to/js";
     assert.deepEqual(new DeadCrawl(pathandhashbangurl).dest, {
       file: 'js.html',
-      dir: './posts/comments/path/to',
-      path: './posts/comments/path/to/js.html'
+      dir: 'posts/comments/path/to',
+      path: 'posts/comments/path/to/js.html'
     });
   });
 
