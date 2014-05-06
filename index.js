@@ -105,8 +105,6 @@ function write() {
 
         fs
           .writeFile(self.dest.path, html, {encoding: 'utf-8'}, function(err) {
-            tearDown.call(self);
-
             if (err) {
               return d.reject(err);
             }
@@ -114,7 +112,8 @@ function write() {
           });
       });
     })
-    .fail(d.reject);
+    .fail(d.reject)
+    .done(tearDown.bind(self));
 
   return d.promise;
 }
