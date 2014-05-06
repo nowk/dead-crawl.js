@@ -2,14 +2,6 @@
 
 var Q = require('q');
 var fs = require('fs');
-var app = require('./app');
-
-
-/*
- * expose app
- */
-
-exports.app = app;
 
 
 /*

@@ -5,8 +5,8 @@ var assert = require('chai').assert;
 var Browser = require('zombie');
 var fs = require('fs');
 var Q = require('q');
-var app = t.app;
 var path = require('path');
+var app = require('./app');
 
 /*
  * root
