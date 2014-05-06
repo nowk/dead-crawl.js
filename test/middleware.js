@@ -34,7 +34,7 @@ describe('middleware', function() {
   });
 
   it('responds to crawlers using ?_escaped_fragment_=', function(done) {
-    var cache = sinon.spy(fs, 'createReadStream');
+    var zombify = sinon.spy(DeadCrawl.prototype, 'zombify');
 
     app.use(DeadCrawl.middleware(url, {destroot: __dirname+'/public/crawls'}));
     app.get("/", function(req, res, next) {
@@ -51,8 +51,8 @@ describe('middleware', function() {
 
             crawler(url, "/", "/path/to/page", 200)
               .then(function() {
-                assert(cache.withArgs(__dirname+"/public/crawls/path/to/page.html").calledOnce);
-                cache.restore();
+                assert(zombify.calledOnce);
+                zombify.restore();
                 done();
               });
           });
