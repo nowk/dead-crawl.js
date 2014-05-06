@@ -29,6 +29,9 @@ function DeadCrawl(url, options) {
   this.url = url;
   this.destroot = options.destroot || '.';
   this.hashbang = options.hashbang || '#!';
+  this.postProcess = options.postProcess || function(browser) {
+    return browser.html();
+  };
   this.browser = null;
 
   this.dest = configureDest.call(this);
@@ -98,19 +101,21 @@ function write() {
   var self = this;
   var d = Q.defer();
 
+  var html = self.postProcess(self.browser);
+
   mkdirp(self.dest.dir, function(err) {
     if (err) {
       return d.reject(err);
     }
 
     fs
-      .writeFile(self.dest.path, self.browser.html(), {encoding: 'utf-8'}, function(err) {
+      .writeFile(self.dest.path, html, {encoding: 'utf-8'}, function(err) {
         tearDown.call(self);
 
         if (err) {
           return d.reject(err);
         }
-        d.resolve(self.browser.html());
+        d.resolve(html);
       });
   });
 

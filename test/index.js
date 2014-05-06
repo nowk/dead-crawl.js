@@ -137,5 +137,23 @@ describe('DeadCrawl', function() {
       path: './posts/comments/path/to/js.html'
     });
   });
+
+  it('can post process', function(done) {
+    new DeadCrawl(url, {
+      postProcess: function(browser) {
+        return browser.html().replace(/\sng-app="\w+"\s/, ' ');
+      }
+    })
+      .zombify()
+      .then(function(html) {
+        assert(!/ng-app/.test(html));
+        fs.lstat('index.html', function(err, stats) {
+          if (err) {
+            return done(err);
+          }
+          done();
+        });
+      });
+  });
 });
 
