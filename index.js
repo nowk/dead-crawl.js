@@ -110,7 +110,7 @@ function write() {
         if (err) {
           return d.reject(err);
         }
-        d.resolve();
+        d.resolve(self.browser.html());
       });
   });
 
@@ -131,4 +131,48 @@ function tearDown() {
     self.browser.close();
   });
 }
+
+
+/*
+ * middleware
+ *
+ * @param {String} url
+ * @return {Function}
+ */
+
+DeadCrawl.middleware = function(url, options) {
+  if ('undefined' === typeof options) {
+    options = {};
+  }
+
+  return function(req, res, next) {
+    if ('_escaped_fragment_' in req.query) {
+      var uri = Url.parse(url);
+      var path = req.query._escaped_fragment_;
+
+      // build out the ajax url
+      if ("/" !== path) {
+        url = uri.protocol+'//'+Path.join(uri.host, (options.hashbang || '#!'), path);
+      }
+
+      var dc = new DeadCrawl(url, options);
+
+      // if cached version is available send that back, else DeadCrawl
+      fs.lstat(dc.dest.path, function(err) {
+        if (err) {
+          dc
+            .zombify()
+            .then(function(html) {
+              res.send(html);
+            });
+        } else {
+          var cached = fs.createReadStream(dc.dest.path);
+          cached.pipe(res);
+        }
+      });
+    } else {
+      next();
+    }
+  };
+};
 
