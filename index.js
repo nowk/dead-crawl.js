@@ -45,7 +45,7 @@ DeadCrawl.prototype.zombify = function(opts) {
   browser
     .visit(this.url)
     .then(d.resolve.bind(d, browser))
-    .fail(d.reject.bind(d));
+    .fail(d.reject);
   return d.promise;
 };
 
