@@ -177,7 +177,8 @@ DeadCrawl.middleware = function(crawl, opts) {
 
       // check for existing snapshot
       fs.lstat(snapshot.path, function(err) {
-        var url = req.protocol+'://'+req.host+':'+req.app.settings.port;
+        var url = process.env.DEADCRAWL_HOST ||
+          req.protocol+'://'+req.host+':'+req.app.settings.port;
         if ("/" !== path) url+= '/'+Path.join((opts.hashBang || '#!'), path);
 
         if (err) {
