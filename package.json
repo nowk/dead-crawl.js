@@ -1,6 +1,6 @@
 {
   "name": "dead-crawl",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "SEO+Javascript == Undead",
   "main": "index.js",
   "scripts": {
