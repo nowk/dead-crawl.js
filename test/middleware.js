@@ -36,7 +36,16 @@ describe('middleware', function() {
   it('responds to crawlers using ?_escaped_fragment_=', function(done) {
     var zombify = sinon.spy(DeadCrawl.prototype, 'zombify');
 
-    app.use(DeadCrawl.middleware(url, {destroot: __dirname+'/public/crawls'}));
+    function crawl(url, opts, res) {
+      new DeadCrawl(url)
+        .zombify()
+        .then(DeadCrawl.writer(opts))
+        .done(function(html) {
+          res.send(html);
+        });
+    }
+
+    app.use(DeadCrawl.middleware(crawl, {destRoot: __dirname+'/public/crawls'}));
     app.get("/", function(req, res, next) {
       res.render('./app');
     });
@@ -48,6 +57,7 @@ describe('middleware', function() {
             if (err) {
               return done(err);
             }
+            done();
 
             crawler(url, "/", "/path/to/page", 200)
               .then(function() {

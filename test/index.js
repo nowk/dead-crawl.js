@@ -21,7 +21,7 @@ app.get('/', function(req, res, next) {
  * pathed route
  */
 
-app.get("/path/to/page(.:format)", function(req, res, next) {
+app.get("/path/to/page(.:format)?", function(req, res, next) {
   res.render('./app');
 });
 
@@ -43,7 +43,8 @@ describe('DeadCrawl', function() {
       .allSettled([
         t.unlink('./index.html'),
         t.unlink('./path/to/page.html'),
-        t.unlink('./test/public/index.html')
+        t.unlink('./test/public/index.html'),
+        t.unlink('./path/to/page/with/js.html')
       ])
       .then(function() {
         done();
@@ -57,7 +58,8 @@ describe('DeadCrawl', function() {
   it('visits the url and saves the html to file', function(done) {
     new DeadCrawl(url)
       .zombify()
-      .then(function() {
+      .then(DeadCrawl.writer())
+      .done(function(html) {
         fs.lstat('index.html', function(err, stats) {
           if (err) {
             return done(err);
@@ -67,26 +69,11 @@ describe('DeadCrawl', function() {
       });
   });
 
-  it('saves the file based on the url path', function(done) {
-    var dca = new DeadCrawl(url);
-    assert.deepEqual(dca.dest, {
-      file: 'index.html',
-      dir: '.',
-      path: 'index.html',
-    });
-
-    var pathurl = url+'/path/to/page?foo=bar';
-    var dcb = new DeadCrawl(pathurl);
-    assert.deepEqual(dcb.dest, {
-      file: 'page.html',
-      dir: 'path/to',
-      path: 'path/to/page.html',
-    });
-
-    var pathurlwext = url+'/path/to/page.html';
-    new DeadCrawl(pathurlwext)
+  it('handles pathed urls', function(done) {
+    new DeadCrawl(url+'/path/to/page.html')
       .zombify()
-      .then(function() {
+      .then(DeadCrawl.writer())
+      .done(function(html) {
         fs.lstat('./path/to/page.html', function(err, stats) {
           if (err) {
             return done(err);
@@ -96,18 +83,39 @@ describe('DeadCrawl', function() {
       });
   });
 
-  it("accepts a destination root path", function(done) {
-    var dc = new DeadCrawl(url, {destroot: __dirname+'/public/'});
-
-    assert.deepEqual(dc.dest, {
-      file: 'index.html',
-      dir: __dirname+'/public',
-      path: __dirname+'/public/index.html'
-    });
-
-    dc
+  it("handles urls with hashbang", function(done) {
+    new DeadCrawl(url+"/path/to/page/#!/with/js")
       .zombify()
-      .then(function() {
+      .then(DeadCrawl.writer())
+      .done(function(html) {
+        fs.lstat('./path/to/page/with/js.html', function(err, stats) {
+          if (err) {
+            return done(err);
+          }
+          done();
+        });
+      });
+  });
+
+  it("can override the hasbang delimiter", function(done) {
+    new DeadCrawl(url+"/path/to/page/#/with/js")
+      .zombify()
+      .then(DeadCrawl.writer({hashBang: '#'}))
+      .done(function(html) {
+        fs.lstat('./path/to/page/with/js.html', function(err, stats) {
+          if (err) {
+            return done(err);
+          }
+          done();
+        });
+      });
+  });
+
+  it("can override destination root path", function(done) {
+    new DeadCrawl(url)
+      .zombify()
+      .then(DeadCrawl.writer({destRoot: __dirname+'/public/'}))
+      .done(function(html) {
         fs.lstat('./test/public/index.html', function(err, stats) {
           if (err) {
             return done(err);
@@ -117,67 +125,59 @@ describe('DeadCrawl', function() {
       });
   });
 
-  it("resolves hashbang", function() {
-    assert.deepEqual(new DeadCrawl(url+'/#!/').dest, {
-      file: 'index.html',
-      dir: '.',
-      path: 'index.html'
-    });
 
-    assert.deepEqual(new DeadCrawl(url+'/#!/path/to/js').dest, {
-      file: 'js.html',
-      dir: 'path/to',
-      path: 'path/to/js.html'
-    });
-
-    var pathandhashbangurl = url+"/posts/comments/#!/path/to/js";
-    assert.deepEqual(new DeadCrawl(pathandhashbangurl).dest, {
-      file: 'js.html',
-      dir: 'posts/comments/path/to',
-      path: 'posts/comments/path/to/js.html'
-    });
-  });
-
-  it("strips out query string", function() {
-    assert.deepEqual(new DeadCrawl(url+'/#!/path/to/page?id=12345').dest, {
-      file: 'page.html',
-      dir: 'path/to',
-      path: 'path/to/page.html'
-    });
-
-    assert.deepEqual(new DeadCrawl(url+'/path/to/page?id=12345').dest, {
-      file: 'page.html',
-      dir: 'path/to',
-      path: 'path/to/page.html'
-    });
-  });
-
-  it('can post process', function(done) {
-    new DeadCrawl(url, {
-      postProcess: function(browser) {
-        var d = Q.defer();
-        (function wait() {
-          var c = browser.query('meta[name="description"]').attributes.content._nodeValue;
-          // NOTE should timer/interval this so you can cancel out, else it will run forever
-          if (!!!c) {
-            return wait();
-          }
-          d.resolve(browser.html().replace(/\sng-app="\w+"/, ''));
-        })();
-
-        // TODO would really like to use wait...
-        // browser.wait(function(window) {
-        //   var sel = window.document.querySelector('title');
-        //   return sel;
-        // }, function() {
-        //   d.resolve(browser.html());
-        // });
-
-        return d.promise;
-      }
-    })
+  it("strips out query string", function(done) {
+    new DeadCrawl(url+'/#!/path/to/page?id=12345')
       .zombify()
-      .then(function(html) {
+      .then(DeadCrawl.writer())
+      .done(function(html) {
+        fs.lstat('./path/to/page.html', function(err, stats) {
+          if (err) {
+            return done(err);
+          }
+          done();
+        });
+      });
+  });
+
+  it('can stack onto the promise chain', function(done) {
+    function waitForMetaDescription() {
+      return function(browser) {
+        var d = Q.defer();
+        var i = 0;
+        var waiting = setInterval(function() {
+          var desc = browser
+            .query('meta[name="description"]')
+            .attributes
+            .content
+            ._nodeValue;
+
+          if (!!desc || i > 4) {
+            clearInterval(waiting);
+            d.resolve(browser);
+          }
+
+          i++;
+        }, 100);
+        return d.promise;
+      };
+    }
+
+    function removeNgApp() {
+      return function(browser) {
+        var d = Q.defer();
+        var html = browser.html().replace(/\sng\-app="\w+"/, '');
+        d.resolve([browser, html]);
+        return d.promise;
+      };
+    }
+
+    new DeadCrawl(url)
+      .zombify()
+      .then(waitForMetaDescription())
+      .then(removeNgApp())
+      .then(DeadCrawl.writer())
+      .done(function(html) {
         assert(!/ng-app/.test(html));
         assert(/Awesome Title/.test(html));
         fs.lstat('index.html', function(err, stats) {
