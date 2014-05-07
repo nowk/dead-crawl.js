@@ -13,9 +13,10 @@ SEO+javascript == Undead *(An all Javascript solution)*
     var fs = require('fs');
     var DeadCrawl = require('dead-crawl');
 
-    new DeadCrawl('http://mysite.com/#!/my/js/page'[, options])
+    new DeadCrawl('http://mysite.com/#!/my/js/page')
       .zombify()
-      .then(function(html) {
+      .then(DeadCrawl.writer())
+      .done(function(html) {
         fs.lstat('./my/js/page.html', function(err, stats) {
           if (err) {
             return res.send(500);
@@ -27,33 +28,64 @@ SEO+javascript == Undead *(An all Javascript solution)*
 
 ---
 
+You can add promises before writing (or not) to do additional processing or waiting.
+
+    new DeadCrawl('http://mysite.com/#!/my/js/page')
+      .zombify()
+      .then(doSomething())
+      .then(thenSomethingElse())
+      .then(DeadCrawl.writer())
+      .done(function(html) {
+        fs.lstat('./my/js/page.html', function(err, stats) {
+          if (err) {
+            return res.send(500);
+          }
+
+          return res.send(html);
+        });
+      });
+
+
+The first promise will be resolved with the instance of the current `browser`, and it **must** continue to resolve the `browser`.
+
+    function doSomething(browser) {
+      var d = Q.defer();
+      d.resolve(browser);
+      return d.promise;
+    }
+
+If you plan to run a process against `browser.html()` and want to write that processed html to `DeadCrawl.writer()`, then you need to resolve that as part of an array with `browser`. *You must pass `browser` to `DeadCrawl.writer()`*
+
+    function thenSomethingElse(browser) {
+      var d = Q.defer();
+      var html = browser.html().replace(/\sng-app="\w+"/, '');
+      d.resolve([browser, html]);
+      return d.promise;
+    }
+
+---
+
+`DeadCrawl.writer()` will resolve the `browser.html()` or the passed in `html` (view above).
+
+---
+
 Using the middleware for Express.js
 
     var app = require('express')();
 
-    app.use(DeadCrawl.middleware('http://localhost:3000'[, options]));
-    // your routes
-    // your static
+    function crawl(url, opts, res) {
+      new DeadCrawl(url)
+        .zombify()
+        .then(DeadCrawl.writer(opts))
+        .done(function(html) {
+          res.send(html);
+        });
+    }
 
-If a `?_escaped_fragment_=` query param is provided, the middleware will check for the rendered page and stream that saved file back. Else it will render the page, save it to file, then `res.send` the HTML back to the client.
+    app.use(DeadCrawl.middleware(crawl, {destRoot: __dirname+'/public/crawls'}));
+    app.use(routes);
+    app.use(express.static(...));
 
----
-
-The `DeadCrawl` constructor can take an `options` object.
-
-* **destroot** `String`
-
-  root path to save rendered HTMLs. *default `.`*
-
-* **hashbang** `String`
-
-  your hashbang delimiter. *default `#!`*
-
-* **postProcess(browser)** `Function`
-
-  gives you access to the Zombie browser before it attempts to write to file.
-
-  *This method must return a Promise and the Promise must resolve with a `String`*
 
 
 ## Notes
