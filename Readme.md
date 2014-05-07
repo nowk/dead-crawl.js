@@ -57,11 +57,11 @@ The first promise will be resolved with the instance of the current `browser`, a
 If you plan to run a process against `browser.html()` and want to write that processed html to `DeadCrawl.writer()`, then you need to resolve that as part of an array with `browser`. *You must pass `browser` to `DeadCrawl.writer()`*
 
     function thenSomethingElse(browser) {
-      var d = Q.defer();
       var html = browser.html().replace(/\sng-app="\w+"/, '');
-      d.resolve([browser, html]);
-      return d.promise;
+      return [browser, html];
     }
+
+If the step is not async, you can just `return`, you don't have to provide a promise.
 
 ---
 
