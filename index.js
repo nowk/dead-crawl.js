@@ -177,11 +177,14 @@ DeadCrawl.middleware = function(crawl, opts) {
 
       // check for existing snapshot
       fs.exists(snapshot.path, function(exists) {
-        var url = process.env.DEADCRAWL_HOST ||
-          req.protocol+'://'+req.host+':'+req.app.settings.port;
-        if ("/" !== path) url+= '/'+Path.join((opts.hashBang || '#!'), path);
-
         if (!exists) {
+          var url = process.env.DEADCRAWL_HOST ||
+            req.protocol+'://'+req.host+':'+req.app.settings.port;
+
+          if ("/" !== path) {
+            url+= '/'+Path.join((opts.hashBang || '#!'), path);
+          }
+
           crawl(url, opts, res);
         } else {
           var cached = fs.createReadStream(snapshot.path);
