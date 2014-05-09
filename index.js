@@ -176,12 +176,12 @@ DeadCrawl.middleware = function(crawl, opts) {
       var snapshot = DeadCrawl.destination.call({location: {pathname: path}}, opts);
 
       // check for existing snapshot
-      fs.lstat(snapshot.path, function(err) {
+      fs.exists(snapshot.path, function(exists) {
         var url = process.env.DEADCRAWL_HOST ||
           req.protocol+'://'+req.host+':'+req.app.settings.port;
         if ("/" !== path) url+= '/'+Path.join((opts.hashBang || '#!'), path);
 
-        if (err) {
+        if (!exists) {
           crawl(url, opts, res);
         } else {
           var cached = fs.createReadStream(snapshot.path);

@@ -17,8 +17,8 @@ SEO+javascript == Undead *(An all Javascript solution)*
       .zombify()
       .then(DeadCrawl.writer())
       .done(function(html) {
-        fs.lstat('./my/js/page.html', function(err, stats) {
-          if (err) {
+        fs.exists('./my/js/page.html', function(exists) {
+          if (!exists) {
             return res.send(500);
           }
 
@@ -36,8 +36,8 @@ You can add promises before writing (or not) to do additional processing or wait
       .then(thenSomethingElse())
       .then(DeadCrawl.writer())
       .done(function(html) {
-        fs.lstat('./my/js/page.html', function(err, stats) {
-          if (err) {
+        fs.exists('./my/js/page.html', function(exists) {
+          if (!exists) {
             return res.send(500);
           }
 

@@ -60,9 +60,9 @@ describe('DeadCrawl', function() {
       .zombify()
       .then(DeadCrawl.writer())
       .done(function(html) {
-        fs.lstat('index.html', function(err, stats) {
-          if (err) {
-            return done(err);
+        fs.exists('index.html', function(exists) {
+          if (!exists) {
+            return done('failed to create file');
           }
           done();
         });
@@ -74,9 +74,9 @@ describe('DeadCrawl', function() {
       .zombify()
       .then(DeadCrawl.writer())
       .done(function(html) {
-        fs.lstat('./path/to/page.html', function(err, stats) {
-          if (err) {
-            return done(err);
+        fs.exists('./path/to/page.html', function(exists) {
+          if (!exists) {
+            return done('failed to create file');
           }
           done();
         });
@@ -88,9 +88,9 @@ describe('DeadCrawl', function() {
       .zombify()
       .then(DeadCrawl.writer())
       .done(function(html) {
-        fs.lstat('./path/to/page/with/js.html', function(err, stats) {
-          if (err) {
-            return done(err);
+        fs.exists('./path/to/page/with/js.html', function(exists) {
+          if (!exists) {
+            return done('failed to create file');
           }
           done();
         });
@@ -102,9 +102,9 @@ describe('DeadCrawl', function() {
       .zombify()
       .then(DeadCrawl.writer({hashBang: '#'}))
       .done(function(html) {
-        fs.lstat('./path/to/page/with/js.html', function(err, stats) {
-          if (err) {
-            return done(err);
+        fs.exists('./path/to/page/with/js.html', function(exists) {
+          if (!exists) {
+            return done('failed to create file');
           }
           done();
         });
@@ -116,9 +116,9 @@ describe('DeadCrawl', function() {
       .zombify()
       .then(DeadCrawl.writer({destRoot: __dirname+'/public/'}))
       .done(function(html) {
-        fs.lstat('./test/public/index.html', function(err, stats) {
-          if (err) {
-            return done(err);
+        fs.exists('./test/public/index.html', function(exists) {
+          if (!exists) {
+            return done('failed to create file');
           }
           done();
         });
@@ -131,9 +131,9 @@ describe('DeadCrawl', function() {
       .zombify()
       .then(DeadCrawl.writer())
       .done(function(html) {
-        fs.lstat('./path/to/page.html', function(err, stats) {
-          if (err) {
-            return done(err);
+        fs.exists('./path/to/page.html', function(exists) {
+          if (!exists) {
+            return done('failed to create file');
           }
           done();
         });
@@ -178,9 +178,9 @@ describe('DeadCrawl', function() {
       .done(function(html) {
         assert(!/ng-app/.test(html));
         assert(/Awesome Title/.test(html));
-        fs.lstat('index.html', function(err, stats) {
-          if (err) {
-            return done(err);
+        fs.exists('index.html', function(exists) {
+          if (!exists) {
+            return done('failed to create file');
           }
           done();
         });
