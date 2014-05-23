@@ -77,7 +77,12 @@ function glue(req, hashbang) {
   var url = req.protocol+'://';
   url+= req.host;
   url+= ":"+req.app.settings.port;
-  return url+= path.join(req.path, (hashbang||'#!'), req.query._escaped_fragment_);
+
+  if ('undefined' === typeof hashbang) {
+    hashbang = '#!';
+  }
+
+  return url+= path.join(req.path, (hashbang||''), req.query._escaped_fragment_);
 }
 
 /*

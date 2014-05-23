@@ -34,5 +34,13 @@ describe('glue', function() {
     req.query._escaped_fragment_ = "";
     url = glue(req);
     assert.equal(url, "http://example.com:80/path/to/page/#!");
+
+    req.query._escaped_fragment_ = "/do/js";
+    url = glue(req, '');
+    assert.equal(url, "http://example.com:80/path/to/page/do/js");
+
+    req.query._escaped_fragment_ = "/do/js";
+    url = glue(req, null);
+    assert.equal(url, "http://example.com:80/path/to/page/do/js");
   });
 });
