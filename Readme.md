@@ -1,6 +1,8 @@
+[![Code Climate](https://codeclimate.com/github/nowk/dead-crawl.js.png)](https://codeclimate.com/github/nowk/dead-crawl.js)
+
 # DeadCrawl.js
 
-SEO+javascript == Undead *(An all Javascript solution)*
+SEO+javascript == Undead *(An Express.js middleware)*
 
 *Renders the page with Zombie.js and saves to file.*
 
@@ -10,83 +12,75 @@ SEO+javascript == Undead *(An all Javascript solution)*
 
 # Example
 
-    var fs = require('fs');
-    var DeadCrawl = require('dead-crawl');
-
-    new DeadCrawl('http://mysite.com/#!/my/js/page')
-      .zombify()
-      .then(DeadCrawl.writer())
-      .done(function(html) {
-        fs.exists('./my/js/page.html', function(exists) {
-          if (!exists) {
-            return res.send(500);
-          }
-
-          return res.send(html);
-        });
-      });
-
----
-
-You can add promises before writing (or not) to do additional processing or waiting.
-
-    new DeadCrawl('http://mysite.com/#!/my/js/page')
-      .zombify()
-      .then(doSomething())
-      .then(thenSomethingElse())
-      .then(DeadCrawl.writer())
-      .done(function(html) {
-        fs.exists('./my/js/page.html', function(exists) {
-          if (!exists) {
-            return res.send(500);
-          }
-
-          return res.send(html);
-        });
-      });
-
-
-The first promise will be resolved with the instance of the current `browser`, and it **must** continue to resolve the `browser`.
-
-    function doSomething(browser) {
-      var d = Q.defer();
-      d.resolve(browser);
-      return d.promise;
-    }
-
-If you plan to run a process against `browser.html()` and want to write that processed html to `DeadCrawl.writer()`, then you need to resolve that as part of an array with `browser`. *You must pass `browser` to `DeadCrawl.writer()`*
-
-    function thenSomethingElse(browser) {
-      var html = browser.html().replace(/\sng-app="\w+"/, '');
-      return [browser, html];
-    }
-
-If the step is not async, you can just `return`, you don't have to provide a promise.
-
----
-
-`DeadCrawl.writer()` will resolve the `browser.html()` or the passed in `html` (view above).
-
----
-
-Using the middleware for Express.js
-
     var app = require('express')();
+    var deadCrawl = require('dead-crawl').deadCrawl;
 
-    function crawl(url, opts, res) {
-      new DeadCrawl(url)
-        .zombify()
-        .then(DeadCrawl.writer(opts))
-        .done(function(html) {
-          res.send(html);
-        });
-    }
-
-    app.use(DeadCrawl.middleware(crawl, {destRoot: __dirname+'/public/crawls'}));
+    app.use(deadCrawl());
     app.use(routes);
     app.use(express.static(...));
 
 
+---
+
+You may alter your hashbang delimiter by passing it in as an option.
+
+    app.use(deadCrawl({hashbang: "#"}));
+
+Will rebuild the url with that vs. the default `#!`.  
+eg. `http://example.com?_escaped_fragment_=/js/page` => `http://example.com/#/js/page`
+
+---
+
+To change the destination root of the saved html files, supply a `destRoot` option.
+
+    app.use(deadCrawl({destRoot: __dirname+'/public/crawled'}));
+
+The default is `destRoot` is `.`;
+
+---
+
+To run process before the `html` gets written to file you can supply a `beforeWrite` option with an `Array` of functions.
+
+    function waitForMetaDescription(browser, _, next) {
+      var i = 0;
+      var waiting = setInterval(function() {
+        var desc = browser.query('meta[name="description"]')
+          .attributes
+          .content
+          ._nodeValue;
+
+        i++;
+        if (!!desc || i > 10) {
+          next();
+        }
+      }, 100);
+    }
+
+    function removeNgApp(browser, next) {
+      next(null, browser.html().replace(/\sng\-app="\w+"/, ''));
+    }
+
+    var opts = {
+      destRoot: __dirname+'/public/crawls',
+      beforeWriter: [
+        waitForMetaDescription,
+        removeNgApp
+      ]
+    };
+
+    app.use(deadCrawl(opts));
+
+The first function will always be provided with **3** arguments: `browser`, `null`, `next`.
+
+The last argument should `next` any processed `html` (or `string`) to be written to file. Else `browser.html()` will be written to file. 
+
+*Please view [WalkingDead.js](https://github.com/nowk/walking-dead.js) for more info.*
+
+---
+
+Once a page has been crawled, any further requests `(?_escaped_fragment_=)` will send back the saved html file. If your page is dynamic you will have to ensure you sweep out the cached files when needed.
+
+---
 
 ## Notes
 
