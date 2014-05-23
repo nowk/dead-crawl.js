@@ -6,6 +6,8 @@ var fs = require('fs');
 var Q = require('q');
 var path = require('path');
 var request = require('supertest');
+var sinon = require('sinon');
+var WalkingDead = require('walking-dead');
 
 var deadCrawl = require('..').deadCrawl;
 
@@ -53,6 +55,8 @@ describe('DeadCrawl', function() {
 
 
   it('visits the url and saves the html to file', function(done) {
+    var zombify = sinon.spy(WalkingDead.prototype, 'zombify');
+
     var opts = {destRoot: __dirname+'/public/crawls'};
     app.middlewares()
       .before('routes', {name: 'dead-crawl', cb: deadCrawl(opts)})
@@ -71,7 +75,22 @@ describe('DeadCrawl', function() {
           var html = res.text;
           assert(/Awesome Title/.test(html));
           assert(fs.existsSync(opts.destRoot+"/path/to/page.html"));
-          done();
+
+          request('http://localhost:1337/')
+            .get("/")
+            .query({_escaped_fragment_: "/path/to/page"})
+            .expect(200)
+            .end(function(err, res) {
+              if (err) {
+                return done(err);
+              }
+
+              var html = res.text;
+              assert(/Awesome Title/.test(html));
+              assert(zombify.calledOnce);
+              zombify.restore();
+              done();
+            });
         });
     });
   });
