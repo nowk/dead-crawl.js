@@ -2,189 +2,138 @@
 
 var t = require('./test_helper');
 var assert = require('chai').assert;
-var Browser = require('zombie');
 var fs = require('fs');
 var Q = require('q');
 var path = require('path');
-var app = require('./app');
+var request = require('supertest');
 
-/*
- * root
- */
-
-app.get('/', function(req, res, next) {
-  res.render("./app");
-});
-
-
-/*
- * pathed route
- */
-
-app.get("/path/to/page(.:format)?", function(req, res, next) {
-  res.render('./app');
-});
-
-
-var DeadCrawl = require('..');
+var deadCrawl = require('..').deadCrawl;
 
 
 describe('DeadCrawl', function() {
   this._timeout = 9999;
   var url = 'http://localhost:1337';
+  var app;
   var server;
 
-  before(function(done) {
-    server = app.listen(1337, done);
+  beforeEach(function(done) {
+    resetRequire();
+
+    app = require('./app');
+    app.middlewares()
+      .before('static', {name: 'routes', fn: function() {
+        app
+          .get('/', function(req, res, next) {
+            res.render("./app");
+          })
+          .get("/path/to/page(.:format)?", function(req, res, next) {
+            res.render('./app');
+          });
+      }});
+    done();
   });
 
   afterEach(function(done) {
-    Q
-      .allSettled([
-        t.unlink('./index.html'),
-        t.unlink('./path/to/page.html'),
-        t.unlink('./test/public/index.html'),
-        t.unlink('./path/to/page/with/js.html')
-      ])
-      .then(function() {
-        done();
-      });
+    server.close(function() {
+      resetRequire();
+
+      Q
+        .allSettled([
+          t.unlink('./index.html'),
+          t.unlink('./path/to/page.html'),
+          t.unlink('./test/public/index.html'),
+          t.unlink('./path/to/page/with/js.html'),
+          t.unlink('./test/public/crawls/path/to/page.html')
+        ])
+        .then(function() {
+          done();
+        });
+    });
   });
 
-  after(function(done) {
-    server.close(done);
-  });
 
   it('visits the url and saves the html to file', function(done) {
-    new DeadCrawl(url)
-      .zombify()
-      .then(DeadCrawl.writer())
-      .done(function(html) {
-        fs.exists('index.html', function(exists) {
-          if (!exists) {
-            return done('failed to create file');
+    var opts = {destRoot: __dirname+'/public/crawls'};
+    app.middlewares()
+      .before('routes', {name: 'dead-crawl', cb: deadCrawl(opts)})
+      .finish();
+
+    server = app.listen(1337, function() {
+      request('http://localhost:1337/')
+        .get("/")
+        .query({_escaped_fragment_: "/path/to/page"})
+        .expect(200)
+        .end(function(err, res) {
+          if (err) {
+            return done(err);
           }
+
+          var html = res.text;
+          assert(/Awesome Title/.test(html));
+          assert(fs.existsSync(opts.destRoot+"/path/to/page.html"));
           done();
         });
-      });
+    });
   });
 
-  it('handles pathed urls', function(done) {
-    new DeadCrawl(url+'/path/to/page.html')
-      .zombify()
-      .then(DeadCrawl.writer())
-      .done(function(html) {
-        fs.exists('./path/to/page.html', function(exists) {
-          if (!exists) {
-            return done('failed to create file');
-          }
-          done();
-        });
-      });
-  });
+  it('can execute functions before writing', function(done) {
+    function waitForMetaDescription(browser, _, next) {
+      var i = 0;
+      var waiting = setInterval(function() {
+        var desc = browser.query('meta[name="description"]')
+          .attributes
+          .content
+          ._nodeValue;
 
-  it("handles urls with hashbang", function(done) {
-    new DeadCrawl(url+"/path/to/page/#!/with/js")
-      .zombify()
-      .then(DeadCrawl.writer())
-      .done(function(html) {
-        fs.exists('./path/to/page/with/js.html', function(exists) {
-          if (!exists) {
-            return done('failed to create file');
-          }
-          done();
-        });
-      });
-  });
-
-  it("can override the hasbang delimiter", function(done) {
-    new DeadCrawl(url+"/path/to/page/#/with/js")
-      .zombify()
-      .then(DeadCrawl.writer({hashBang: '#'}))
-      .done(function(html) {
-        fs.exists('./path/to/page/with/js.html', function(exists) {
-          if (!exists) {
-            return done('failed to create file');
-          }
-          done();
-        });
-      });
-  });
-
-  it("can override destination root path", function(done) {
-    new DeadCrawl(url)
-      .zombify()
-      .then(DeadCrawl.writer({destRoot: __dirname+'/public/'}))
-      .done(function(html) {
-        fs.exists('./test/public/index.html', function(exists) {
-          if (!exists) {
-            return done('failed to create file');
-          }
-          done();
-        });
-      });
-  });
-
-
-  it("strips out query string", function(done) {
-    new DeadCrawl(url+'/#!/path/to/page?id=12345')
-      .zombify()
-      .then(DeadCrawl.writer())
-      .done(function(html) {
-        fs.exists('./path/to/page.html', function(exists) {
-          if (!exists) {
-            return done('failed to create file');
-          }
-          done();
-        });
-      });
-  });
-
-  it('can stack onto the promise chain', function(done) {
-    function waitForMetaDescription() {
-      return function(browser) {
-        var d = Q.defer();
-        var i = 0;
-        var waiting = setInterval(function() {
-          var desc = browser
-            .query('meta[name="description"]')
-            .attributes
-            .content
-            ._nodeValue;
-
-          if (!!desc || i > 4) {
-            clearInterval(waiting);
-            d.resolve(browser);
-          }
-
-          i++;
-        }, 100);
-        return d.promise;
-      };
+        i++;
+        if (!!desc || i > 10) {
+          next();
+        }
+      }, 100);
     }
 
-    function removeNgApp() {
-      return function(browser) {
-        var html = browser.html().replace(/\sng\-app="\w+"/, '');
-        return [browser, html];
-      };
+    function removeNgApp(browser, next) {
+      next(null, browser.html().replace(/\sng\-app="\w+"/, ''));
     }
 
-    new DeadCrawl(url)
-      .zombify()
-      .then(waitForMetaDescription())
-      .then(removeNgApp())
-      .then(DeadCrawl.writer())
-      .done(function(html) {
-        assert(!/ng-app/.test(html));
-        assert(/Awesome Title/.test(html));
-        fs.exists('index.html', function(exists) {
-          if (!exists) {
-            return done('failed to create file');
+    var opts = {
+      destRoot: __dirname+'/public/crawls',
+      beforeWriter: [
+        waitForMetaDescription,
+        removeNgApp
+      ]
+    };
+    app.middlewares()
+      .before('routes', {name: 'dead-crawl', cb: deadCrawl(opts)})
+      .finish();
+
+    server = app.listen(1337, function() {
+      request('http://localhost:1337/')
+        .get("/")
+        .query({_escaped_fragment_: "/path/to/page"})
+        .expect(200)
+        .end(function(err, res) {
+          if (err) {
+            return done(err);
           }
+
+          var html = res.text;
+          assert(!/ng-app/.test(html));
+          assert(/Awesome Title/.test(html));
+          assert(fs.existsSync(opts.destRoot+"/path/to/page.html"));
           done();
         });
-      });
+    });
   });
 });
+
+
+/*
+ * clear require cache
+ */
+
+function resetRequire() {
+  delete require.cache[require.resolve('./app')];
+  delete require.cache[require.resolve('..')];
+}
 

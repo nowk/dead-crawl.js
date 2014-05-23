@@ -1,191 +1,52 @@
 /* jshint node: true */
 
-var Browser = require('zombie');
 var fs = require('fs');
-var Q = require('q');
-var Path = require('path');
-var Url = require('url');
+var path = require('path');
+var url = require('url');
 var mkdirp = require('mkdirp');
-
-
-/*
- * expose
- */
-
-module.exports = DeadCrawl;
-
+var WalkingDead = require('walking-dead');
 
 /*
- * daed crawl
+ * deadCrawl middleware
  *
- * @param {String} url
- * @constructor
- */
-
-function DeadCrawl(url) {
-  this.url = url;
-}
-
-
-/*
- * visit via zombie
- *
- * @param {Object} opts
- * @return {Promise}
- * @api public
- */
-
-DeadCrawl.prototype.zombify = function(opts) {
-  if ('undefined' === typeof opts) {
-    opts = {debug: false, silent: true};
-  }
-
-  var d = Q.defer();
-  var browser = new Browser(opts);
-  browser
-    .visit(this.url)
-    .then(d.resolve.bind(d, browser))
-    .fail(d.reject);
-  return d.promise;
-};
-
-
-/*
- * writer utility
- *
- * @param {Object} opts
- * @return {Promise}
- * @api public
- */
-
-DeadCrawl.writer = function(opts) {
-  return function(browser) {
-    var d = Q.defer();
-    var html;
-
-    // Q only takes one value. browser (Zombie) always need to be passed to
-    // parse location but, we may also want to parse html and pass that back as
-    // the final to write vs. calling html() on browser
-    if (browser instanceof Array) {
-      html = browser[1];
-      browser = browser[0];
-    }
-
-    var dest = DeadCrawl.destination.call(browser, opts);
-
-    if (!!!html) {
-      html = browser.html();
-    }
-
-    write.call(dest, html)
-      .then(d.resolve)
-      .fail(d.reject)
-      .done(function() {
-        browser.close();
-      });
-    return d.promise;
-  };
-};
-
-
-/*
- * configure destination
- *
- * @param {Object} opts
- * @return {Object}
- * @api public
- */
-
-DeadCrawl.destination = function(opts) {
-  if ('undefined' === typeof opts) {
-    opts = {};
-  }
-
-  var browser = this;
-  var uri = browser.location;
-  var pathname = uri.pathname;
-  var hash = uri.hash;
-
-  if (!!hash) {
-    pathname = Path
-      .join(pathname, hash.replace((opts.hashBang || '#!'), ''));
-  }
-
-  if ('/' === pathname) {
-    pathname = 'index';
-  }
-
-  pathname = Path
-    .join((opts.destRoot || '.'), pathname)
-    .replace(/\?.*$/, '') // TODO what best is way to handle? not all urls are pretty
-    .replace(/\.\w+$/, '')+'.html';
-
-  return {
-    file: Path.basename(pathname),
-    dir: Path.dirname(pathname),
-    path: pathname
-  };
-};
-
-
-/*
- * write html to file
- *
- * @param {String} html
- * @return {Promise}
- * @api private
- */
-
-function write(html) {
-  var self = this;
-  var d = Q.defer();
-  mkdirp(self.dir, function(err) {
-    if (err) {
-      return d.reject(err);
-    }
-
-    fs
-      .writeFile(self.path, html, {encoding: 'utf-8'}, function(err) {
-        if (err) {
-          return d.reject(err);
-        }
-
-        d.resolve(html);
-      });
-  });
-  return d.promise;
-}
-
-
-/*
- * middleware
- *
- * @param {Function} crawl
  * @param {Object} opts
  * @return {Function}
+ * @api public
  */
 
-DeadCrawl.middleware = function(crawl, opts) {
-  if ('undefined' === typeof opts) {
-    opts = {};
-  }
+exports.deadCrawl = function(opts) {
+  opts = opts || {};
+
+  var beforeWriter = opts.beforeWriter;
+  delete opts.beforeWriter; // delete don't need to pass these around
 
   return function(req, res, next) {
     if ('_escaped_fragment_' in req.query) {
-      var path = req.query._escaped_fragment_;
-      var snapshot = DeadCrawl.destination.call({location: {pathname: path}}, opts);
+      var url = glue(req, opts.hashbang);
+      var snapshot = destination(url, opts);
 
       // check for existing snapshot
       fs.exists(snapshot.path, function(exists) {
         if (!exists) {
-          var url = process.env.DEADCRAWL_HOST ||
-            req.protocol+'://'+req.host+':'+req.app.settings.port;
+          var wd = new WalkingDead(url).zombify()
+            .given(function(browser, next) {
+              next(null, null); // pass go, but curry one arg slot on the next step
+            });
 
-          if ("/" !== path) {
-            url+= '/'+Path.join((opts.hashBang || '#!'), path);
-          }
+          (beforeWriter||[]).forEach(function(fn) {
+            wd.then(fn);
+          });
 
-          crawl(url, opts, res);
+          wd.then(function(browser, html, next) {
+              html = html || browser.html();
+              write(snapshot, html, function() {
+                next(null, html);
+              });
+            })
+            .then(function(browser, html) {
+              res.send(html);
+            })
+            .end();
         } else {
           var cached = fs.createReadStream(snapshot.path);
           cached.pipe(res);
@@ -197,3 +58,104 @@ DeadCrawl.middleware = function(crawl, opts) {
   };
 };
 
+/*
+ * expose glue
+ */
+
+exports.glue = glue;
+
+/*
+ * glue together the actual js url from _escaped_fragment_
+ *
+ * @param {Request} req
+ * @param {String} hashbang
+ * @return {String}
+ * @api private
+ */
+
+function glue(req, hashbang) {
+  var url = req.protocol+'://';
+  url+= req.host;
+  url+= ":"+req.app.settings.port;
+  return url+= path.join(req.path, (hashbang||'#!'), req.query._escaped_fragment_);
+}
+
+/*
+ * expose destination
+ */
+
+exports.destination = destination;
+
+/*
+ * configure destination from url
+ *
+ * @param {String} uri
+ * @param {Object} opts
+ * @return {Object}
+ * @api private
+ */
+
+function destination(uri, opts) {
+  opts = opts || {};
+
+  var _url = url.parse(uri);
+  var pathname = _url.pathname;
+  var hash = _url.hash && trimqs(_url.hash.replace(opts.hashbang||"#!", ''));
+
+  // combine pathname with hash path
+  if (!!hash) {
+    pathname = path.join(pathname, hash);
+  }
+
+  // if / set as index
+  if ('/' === pathname) {
+    pathname = 'index';
+  }
+
+  // form the final destination path
+  pathname = path.join(opts.destRoot||'.', pathname);
+  var ext = path.extname(pathname);
+
+  if (!!!ext || '.' === ext) {
+    pathname = pathname+= '.html';
+  }
+
+  return {filename: path.basename(pathname), dirpath: path.dirname(pathname), path:  pathname};
+}
+
+/*
+ * trims querystring `?xx=xxx'
+ *
+ * @param {String} str
+ * @return {String}
+ * @api private
+ */
+
+function trimqs(str) {
+  return str.replace(/\?.*$/, '');
+}
+
+/*
+ * write html to file
+ *
+ * @param {Object} dest
+ * @param {String} html
+ * @param {Function} callback
+ * @api private
+ */
+
+function write(dest, html, callback) {
+  mkdirp(dest.dirpath, function(err) {
+    if (err) {
+      throw err;
+    }
+
+    fs.writeFile(dest.path, html, {encoding: 'utf-8'}, function(err) {
+      if (err) {
+        throw err;
+      }
+
+      callback();
+    });
+  });
+}
