@@ -29,6 +29,8 @@ You may alter your hashbang delimiter by passing it in as an option.
 Will rebuild the url with that vs. the default `#!`.  
 eg. `http://example.com?_escaped_fragment_=/js/page` => `http://example.com/#/js/page`
 
+`null` or `''` will omit the hashbang entirely.
+
 ---
 
 To change the destination root of the saved html files, supply a `destRoot` option.
