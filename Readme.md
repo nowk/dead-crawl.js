@@ -76,7 +76,7 @@ The first function will always be provided with **3** arguments: `browser`, `nul
 
 The last argument should `next` any processed `html` (or `string`) to be written to file. Else `browser.html()` will be written to file. 
 
-*Please view [WalkingDead.js](https://github.com/nowk/walking-dead.js) for more info.*
+*Information on using `next` to pass arguments can be viewed at [WalkingDead.js](https://github.com/nowk/walking-dead.js).*
 
 ---
 
