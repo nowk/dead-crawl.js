@@ -74,9 +74,12 @@ exports.glue = glue;
  */
 
 function glue(req, hashbang) {
-  var url = req.protocol+'://';
-  url+= req.host;
-  url+= ":"+req.app.settings.port;
+  var url = process.env.DEAD_CRAWL_HOST;
+  if (!!!url) {
+    url = req.protocol+'://';
+    url+= req.host;
+    url+= ":"+req.app.settings.port;
+  }
 
   if ('undefined' === typeof hashbang) {
     hashbang = '#!';

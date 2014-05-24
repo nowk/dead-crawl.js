@@ -43,4 +43,12 @@ describe('glue', function() {
     url = glue(req, null);
     assert.equal(url, "http://example.com:80/path/to/page/do/js");
   });
+
+  it("will use ENV['DEAD_CRAWL_HOST'] as url base if defined", function() {
+    process.env.DEAD_CRAWL_HOST = 'http://google.com:80';
+    req.query._escaped_fragment_ = "/do/js";
+    var url = glue(req);
+    assert.equal(url, "http://google.com:80/path/to/page/#!/do/js");
+    delete process.env.DEAD_CRAWL_HOST;
+  });
 });
