@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/nowk/dead-crawl.js.svg?branch=master)](https://travis-ci.org/nowk/dead-crawl.js)
 [![Code Climate](https://codeclimate.com/github/nowk/dead-crawl.js.png)](https://codeclimate.com/github/nowk/dead-crawl.js)
 
 # DeadCrawl.js
