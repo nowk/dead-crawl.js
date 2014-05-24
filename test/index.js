@@ -41,10 +41,6 @@ describe('DeadCrawl', function() {
 
       Q
         .allSettled([
-          t.unlink('./index.html'),
-          t.unlink('./path/to/page.html'),
-          t.unlink('./test/public/index.html'),
-          t.unlink('./path/to/page/with/js.html'),
           t.unlink('./test/public/crawls/path/to/page.html')
         ])
         .then(function() {
