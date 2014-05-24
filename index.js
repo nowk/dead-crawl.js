@@ -30,7 +30,7 @@ exports.deadCrawl = function(opts) {
         if (!exists) {
           var wd = new WalkingDead(url).zombify()
             .given(function(browser, next) {
-              next(null, null); // pass go, but curry one arg slot on the next step
+              next(null); // pass go, but curry one arg slot on the next step
             });
 
           (beforeWriter||[]).forEach(function(fn) {
@@ -40,7 +40,7 @@ exports.deadCrawl = function(opts) {
           wd.then(function(browser, html, next) {
               html = html || browser.html();
               write(snapshot, html, function() {
-                next(null, html);
+                next(html);
               });
             })
             .then(function(browser, html) {

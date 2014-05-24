@@ -25,7 +25,7 @@
   "dependencies": {
     "mkdirp": "^0.4.1",
     "q": "^1.0.1",
-    "walking-dead": "0.0.5"
+    "walking-dead": "0.0.6"
   },
   "devDependencies": {
     "async": "^0.8.0",

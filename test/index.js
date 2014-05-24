@@ -112,7 +112,7 @@ describe('DeadCrawl', function() {
     }
 
     function removeNgApp(browser, next) {
-      next(null, browser.html().replace(/\sng\-app="\w+"/, ''));
+      next(browser.html().replace(/\sng\-app="\w+"/, ''));
     }
 
     var opts = {

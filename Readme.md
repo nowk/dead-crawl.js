@@ -59,7 +59,7 @@ To run process before the `html` gets written to file you can supply a `beforeWr
     }
 
     function removeNgApp(browser, next) {
-      next(null, browser.html().replace(/\sng\-app="\w+"/, ''));
+      next(browser.html().replace(/\sng\-app="\w+"/, ''));
     }
 
     var opts = {
@@ -74,7 +74,7 @@ To run process before the `html` gets written to file you can supply a `beforeWr
 
 The first function will always be provided with **3** arguments: `browser`, `null`, `next`.
 
-The last argument should `next` any processed `html` (or `string`) to be written to file. Else `browser.html()` will be written to file. 
+The last function (before the writer) needs to `next` any processed `html` (or `string`) to be written to file. Else `browser.html()` will be written to file.
 
 *Information on using `next` to pass arguments can be viewed at [WalkingDead.js](https://github.com/nowk/walking-dead.js).*
 
